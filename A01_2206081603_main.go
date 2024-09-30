@@ -72,7 +72,7 @@ func executeCommand(command string, data []string) {
 			PrintMessage(DeleteMember(data[0]))
 		}
 	case "ADD_TRANSACTION":
-		if len(data) != 2 || len(data) != 3 {
+		if !(len(data) == 2 || len(data) == 3) {
 			PrintMessage("", errors.New("your input command is incorrect"))
 		} else {
 			if integer_qty, err := strconv.Atoi(data[0]); err == nil {
@@ -96,26 +96,49 @@ func executeCommand(command string, data []string) {
 			PrintMessage("", errors.New("your input command is incorrect"))
 		} else {
 			for i := 0; i < len(Items); i++ {
-				if Items[i].GetData().(Item).SKU == data[0] {
-					PrintTransactionRecap(Items[i].GetData().(Item).Transactions, nil)
+				item, ok := Items[i].GetData().(*Item)
+				if !ok {
+					return
+				}
+				if item.SKU == data[0] {
+					if len(item.Transactions) == 0 {
+						PrintMessage("", errors.New("does not have transaction data"))
+						return
+					} else {
+						PrintTransactionRecap(item.Transactions, nil)
+						return
+					}
 				}
 			}
+			PrintMessage("", errors.New("item "+data[0]+" is not in list of items"))
 		}
 	case "TRANSACTION_MEMBER_RECAP":
 		if len(data) != 1 {
 			PrintMessage("", errors.New("your input command is incorrect"))
 		} else {
 			for i := 0; i < len(Members); i++ {
-				if Members[i].GetData().(Item).SKU == data[0] {
-					PrintTransactionRecap(Members[i].GetData().(Item).Transactions, nil)
+				member, ok := Members[i].GetData().(*Member)
+				if !ok {
+					return
+				}
+				if member.IdMember == data[0] {
+					if len(member.Transactions) == 0 {
+						PrintMessage("", errors.New("does not have transaction data"))
+						return
+					} else {
+						PrintTransactionRecap(member.Transactions, nil)
+						return
+					}
 				}
 			}
+			PrintMessage("", errors.New("member "+data[0]+" is not in list of members"))
 		}
 	case "EXIT":
 		os.Exit(1)
 	default:
 		os.Exit(1)
 	}
+
 }
 
 func PrintMessage(successMsg string, errMsg error) {
@@ -127,12 +150,13 @@ func PrintMessage(successMsg string, errMsg error) {
 }
 
 func PrintTransactionRecap(transactions []Transaction, errMsg error) {
-	if len(transactions) == 0 {
-		fmt.Println("[FAILED] " + errMsg.Error())
-	}
 	fmt.Println("-x-x-x-x-x-x-x-x-x-x-x-x-")
 	for i := 0; i < len(transactions); i++ {
-		fmt.Println("SKU: " + transactions[i].SKU + ", ID Member: " + *transactions[i].IdMember + ", Total Price: " + strconv.Itoa(int(transactions[i].Price*transactions[i].Qty)))
+		idMember := "-"
+		if transactions[i].IdMember != nil {
+			idMember = *transactions[i].IdMember
+		}
+		fmt.Println("SKU: " + transactions[i].SKU + ", ID Member: " + idMember + ", Qty: " + strconv.Itoa(int(transactions[i].Qty)) + ", Total Price: " + strconv.Itoa(int(transactions[i].Price*transactions[i].Qty)))
 	}
 	fmt.Println("-x-x-x-x-x-x-x-x-x-x-x-x-")
 }
